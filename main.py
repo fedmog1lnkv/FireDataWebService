@@ -1,5 +1,6 @@
 from flask import Flask
-from src import startup, ENV_CONF
+from src import startup
+from src.config.EnvConfig import ENV_CONF
 
 if __name__ == "__main__":
     app = Flask(__name__)

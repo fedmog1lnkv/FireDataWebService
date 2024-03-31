@@ -1,23 +1,22 @@
 from dotenv import load_dotenv
 import os
-from src.config.EnvConfig import EnvConfig
+from src.config.EnvConfig import config_env, ENV_CONF
+from src.data.repositories.WeatherDataRepository import WeatherDataRepository
 from src.routers import index_router
-
-ENV_CONF = EnvConfig(IPADDR="", PORT=0)
+from src.routers.data import data_router
 
 
 def startup(app):
     config_env()
+    load_data_storages()
     include_routers(app)
-
-
-def config_env():
-    load_dotenv()
-
-    global ENV_CONF
-    ENV_CONF.IPADDR = os.getenv("IPADDR")
-    ENV_CONF.PORT = int(os.getenv("PORT"))
 
 
 def include_routers(app):
     app.register_blueprint(index_router)
+    app.register_blueprint(data_router)
+
+
+def load_data_storages():
+    weather_data_list = WeatherDataRepository.load_weather_data_from_csv("data/data/weather_coords.csv")
+    WeatherDataRepository.load_data_to_memory_storage(weather_data_list)
