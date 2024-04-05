@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mini Calendar</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/main.min.css" rel="stylesheet">
+<style>
+    #map {
+        height: 600px;
+        background-color: lightgray;
+    }
+
+    #mini-calendar {
+        margin-top: 20px;
+    }
+
+    .fc-content-skeleton td,
+    .fc-content-skeleton th {
+        border: none;
+        text-align: center;
+    }
+</style>
+</head>
+<body>
+<div class="container mt-3">
+    <div class="row">
+        <div class="col">
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="option" value="option1">
+                <label class="form-check-label"> Option 1</label>
+            </div>
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="option" value="option2">
+                <label class="form-check-label"> Option 2</label>
+            </div>
+            <div class="form-check form-check-inline">
+                <input class="form-check-input" type="radio" name="option" value="option3">
+                <label class="form-check-label"> Option 3</label>
+            </div>
+        </div>
+    </div>
+    <div class="row mt-3">
+        <div class="col-md-9">
+            <div id="map"></div>
+        </div>
+        <div class="col-md-3">
+            <div id="mini-calendar"></div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/moment@2.29.1/moment.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        var miniCalendarEl = document.getElementById("mini-calendar");
+        var miniCalendar = new FullCalendar.Calendar(miniCalendarEl, {
+            initialView: "dayGridMonth",
+            headerToolbar: {
+                left: "prev",
+                center: "title",
+                right: "next",
+            },
+            fixedWeekCount: false, // Позволяет календарю изменять количество недель в месяце
+            height: "auto", // Автоматическая высота для подгонки размера календаря
+            aspectRatio: 1, // Отношение ширины к высоте для квадратного календаря
+            selectable: true,
+            select: function (info) {
+                miniCalendar.unselect();
+                var selectedDate = moment(info.startStr).format("YYYY-MM-DD");
+                var selectedOption = $("input[name='option']:checked").val();
+                generateMap(selectedDate, selectedOption);
+            },
+        });
+
+        miniCalendar.render();
+
+        function generateMap(date, option) {
+            $.ajax({
+                type: "POST",
+                url: "/generate_map",
+                data: { date: date, option: option },
+                success: function(response) {
+                    $("#map").html(response);
+                }
+            });
+        }
+    });
+</script>
+</body>
+</html>
