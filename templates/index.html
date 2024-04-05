@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -28,16 +28,12 @@
     <div class="row">
         <div class="col">
             <div class="form-check form-check-inline">
-                <input class="form-check-input" type="radio" name="option" value="option1">
-                <label class="form-check-label"> Option 1</label>
+                <input class="form-check-input" type="checkbox" name="option" value="rivers">
+                <label class="form-check-label"> Реки</label>
             </div>
             <div class="form-check form-check-inline">
-                <input class="form-check-input" type="radio" name="option" value="option2">
-                <label class="form-check-label"> Option 2</label>
-            </div>
-            <div class="form-check form-check-inline">
-                <input class="form-check-input" type="radio" name="option" value="option3">
-                <label class="form-check-label"> Option 3</label>
+                <input class="form-check-input" type="checkbox" name="option" value="regions">
+                <label class="form-check-label"> Регионы</label>
             </div>
         </div>
     </div>
@@ -65,30 +61,43 @@
                 center: "title",
                 right: "next",
             },
-            fixedWeekCount: false, // Позволяет календарю изменять количество недель в месяце
-            height: "auto", // Автоматическая высота для подгонки размера календаря
-            aspectRatio: 1, // Отношение ширины к высоте для квадратного календаря
+            fixedWeekCount: false,
+            height: "auto",
+            aspectRatio: 1,
             selectable: true,
             select: function (info) {
                 miniCalendar.unselect();
                 var selectedDate = moment(info.startStr).format("YYYY-MM-DD");
-                var selectedOption = $("input[name='option']:checked").val();
-                generateMap(selectedDate, selectedOption);
+                var selectedOptions = [];
+                $("input[name='option']:checked").each(function() {
+                    selectedOptions.push($(this).val());
+                });
+                generateMap(selectedDate, selectedOptions);
             },
         });
 
         miniCalendar.render();
 
-        function generateMap(date, option) {
+        function generateMap(date, options) {
             $.ajax({
                 type: "POST",
                 url: "/generate_map",
-                data: { date: date, option: option },
+                data: { date: date, options: options },
                 success: function(response) {
                     $("#map").html(response);
                 }
             });
         }
+        
+        // Add event listener to update map when checkboxes are changed
+        $("input[name='option']").change(function() {
+            var selectedDate = moment(miniCalendar.getDate()).format("YYYY-MM-DD");
+            var selectedOptions = [];
+            $("input[name='option']:checked").each(function() {
+                selectedOptions.push($(this).val());
+            });
+            generateMap(selectedDate, selectedOptions);
+        });
     });
 </script>
 </body>
