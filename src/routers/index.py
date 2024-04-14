@@ -1,7 +1,7 @@
 from datetime import datetime
 import json
 
-from flask import Blueprint, request, render_template
+from flask import Blueprint, request, render_template, redirect
 from folium import Map, Marker, GeoJson, folium, Icon
 from shapely import wkt
 
@@ -12,8 +12,9 @@ index_router = Blueprint('index', __name__)
 
 @index_router.route('/')
 def index():
-    return render_template('index.html')
-
+    date = request.args.get('date')
+    options = request.args.getlist('options[]')
+    return render_template('index.html', date=date, options=options)
 
 @index_router.route('/generate_map', methods=['POST'])
 def generate_map():
@@ -21,6 +22,7 @@ def generate_map():
     selected_options = request.form.getlist('options[]')
 
     m = Map(location=[52.17, 104.18], zoom_start=5)
+    print("fires")
     add_fires_to_map(m, target_date)
     # Add rivers from rivers.geojson if "rivers" option is selected
     if 'rivers' in selected_options:
@@ -39,6 +41,7 @@ def generate_map():
         ).add_to(m)
 
     if 'weather' in selected_options:
+        print("weather")
         add_weather_to_map(m, target_date)
 
     map_html = m.get_root().render()
@@ -46,6 +49,7 @@ def generate_map():
     return map_html
 
 def add_fires_to_map(m, target_date):
+    print("fires target_date", target_date)
     geojson_file = 'data/fires/fires.geojson'
 
     with open(geojson_file, encoding='utf-8') as f:
@@ -67,6 +71,7 @@ def add_fires_to_map(m, target_date):
     ).add_to(m)
 
     # Отображение маркеров для центроидов каждой области
+    print(f"fires count {len(filtered_features)}")
     for feature in filtered_features:
         centroid_str = feature['properties']['centroid']
         centroid_point = wkt.loads(centroid_str)

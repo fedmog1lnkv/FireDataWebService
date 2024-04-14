@@ -1,108 +1,186 @@
 <!DOCTYPE html>
 <html lang="ru">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mini Calendar</title>
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
-<link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/main.min.css" rel="stylesheet">
-<style>
-    #map {
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mini Calendar</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/main.min.css"
+      rel="stylesheet"
+    />
+    <style>
+      #map {
         height: 600px;
         background-color: lightgray;
-    }
+      }
 
-    #mini-calendar {
+      #mini-calendar {
         margin-top: 20px;
-    }
+      }
 
-    .fc-content-skeleton td,
-    .fc-content-skeleton th {
+      .fc-content-skeleton td,
+      .fc-content-skeleton th {
         border: none;
         text-align: center;
-    }
-</style>
-</head>
-<body>
-<div class="container mt-3">
-    <div class="row">
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container mt-3">
+      <div class="row">
         <div class="col">
-            <div class="form-check form-check-inline">
-                <input class="form-check-input" type="checkbox" name="option" value="rivers">
-                <label class="form-check-label"> Реки</label>
-            </div>
-            <div class="form-check form-check-inline">
-                <input class="form-check-input" type="checkbox" name="option" value="weather">
-                <label class="form-check-label"> Погода</label>
-            </div>
-            <div class="form-check form-check-inline">
-                <input class="form-check-input" type="checkbox" name="option" value="regions">
-                <label class="form-check-label"> Регионы</label>
-            </div>
+          <div class="form-check form-check-inline">
+            <input
+              class="form-check-input"
+              type="checkbox"
+              name="option"
+              value="rivers"
+            />
+            <label class="form-check-label"> Реки</label>
+          </div>
+          <div class="form-check form-check-inline">
+            <input
+              class="form-check-input"
+              type="checkbox"
+              name="option"
+              value="weather"
+            />
+            <label class="form-check-label"> Погода</label>
+          </div>
+          <div class="form-check form-check-inline">
+            <input
+              class="form-check-input"
+              type="checkbox"
+              name="option"
+              value="regions"
+            />
+            <label class="form-check-label"> Регионы</label>
+          </div>
         </div>
-    </div>
-    <div class="row mt-3">
+      </div>
+      <div class="row mt-3">
         <div class="col-md-9">
-            <div id="map"></div>
+          <div id="map"></div>
         </div>
         <div class="col-md-3">
-            <div id="mini-calendar"></div>
+          <div id="mini-calendar"></div>
+          <button id="shareButton">Поделиться</button>
         </div>
+      </div>
     </div>
-</div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/moment@2.29.1/moment.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script>
-    document.addEventListener("DOMContentLoaded", function () {
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/moment@2.29.1/moment.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+      var SELECTED_DATE = moment().format("YYYY-MM-DD");
+      var SELECTED_OPTIONS = [];
+
+      document.addEventListener("DOMContentLoaded", function () {
         var miniCalendarEl = document.getElementById("mini-calendar");
         var miniCalendar = new FullCalendar.Calendar(miniCalendarEl, {
-            initialView: "dayGridMonth",
-            headerToolbar: {
-                left: "prev",
-                center: "title",
-                right: "next",
-            },
-            fixedWeekCount: false,
-            height: "auto",
-            aspectRatio: 1,
-            selectable: true,
-            select: function (info) {
-                miniCalendar.unselect();
-                var selectedDate = moment(info.startStr).format("YYYY-MM-DD");
-                var selectedOptions = [];
-                $("input[name='option']:checked").each(function() {
-                    selectedOptions.push($(this).val());
-                });
-                generateMap(selectedDate, selectedOptions);
-            },
+          initialView: "dayGridMonth",
+          headerToolbar: {
+            left: "prev",
+            center: "title",
+            right: "next",
+          },
+          fixedWeekCount: false,
+          height: "auto",
+          aspectRatio: 1,
+          selectable: true,
+          select: function (info) {
+            miniCalendar.unselect();
+            SELECTED_DATE = moment(info.startStr).format("YYYY-MM-DD");
+            console.log(SELECTED_DATE);
+            var selectedOptions = [];
+            $("input[name='option']:checked").each(function () {
+              selectedOptions.push($(this).val());
+            });
+            SELECTED_OPTIONS = selectedOptions;
+            generateMap(SELECTED_DATE, selectedOptions);
+          },
+          selectMirror: true,
         });
 
         miniCalendar.render();
 
         function generateMap(date, options) {
-            $.ajax({
-                type: "POST",
-                url: "/generate_map",
-                data: { date: date, options: options },
-                success: function(response) {
-                    $("#map").html(response);
-                }
-            });
+          $.ajax({
+            type: "POST",
+            url: "/generate_map",
+            data: { date: date, options: options },
+            success: function (response) {
+              $("#map").html(response);
+            },
+          });
         }
-        
+
         // Add event listener to update map when checkboxes are changed
-        $("input[name='option']").change(function() {
-            var selectedDate = moment(miniCalendar.getDate()).format("YYYY-MM-DD");
-            var selectedOptions = [];
-            $("input[name='option']:checked").each(function() {
-                selectedOptions.push($(this).val());
-            });
-            generateMap(selectedDate, selectedOptions);
+        $("input[name='option']").change(function () {
+          var selectedDate = SELECTED_DATE;
+          var selectedOptions = [];
+          $("input[name='option']:checked").each(function () {
+            selectedOptions.push($(this).val());
+          });
+          SELECTED_OPTIONS = selectedOptions;
+          generateMap(selectedDate, selectedOptions);
         });
-    });
-</script>
-</body>
+
+        // Add event listener to share button
+        $("#shareButton").click(function () {
+          var currentDomain = window.location.host;
+          var shareUrl =
+            currentDomain +
+            "/?date=" +
+            SELECTED_DATE +
+            "&options=" +
+            SELECTED_OPTIONS.join(",");
+
+          // Copy URL to clipboard
+          navigator.clipboard
+            .writeText(shareUrl)
+            .then(function () {
+              console.log("URL copied to clipboard:", shareUrl);
+              alert("URL copied to clipboard: " + shareUrl);
+            })
+            .catch(function (error) {
+              console.error("Error copying URL to clipboard:", error);
+              alert("Error copying URL to clipboard");
+            });
+        });
+        var urlParams = new URLSearchParams(window.location.search);
+        console.log(urlParams);
+        if (urlParams.has("date")) {
+          var selectedDate = urlParams.get("date");
+          SELECTED_DATE = selectedDate;
+          miniCalendar.select(selectedDate);
+          console.log(selectedDate);
+        }
+        if (urlParams.has("options")) {
+          var selectedOptions = urlParams.get("options").split(",");
+          SELECTED_OPTIONS = selectedOptions;
+          console.log(selectedOptions);
+          selectedOptions.forEach((option) => {
+            $("input[name='option'][value='" + option + "']").prop(
+              "checked",
+              true
+            );
+          });
+        }
+        generateMap(SELECTED_DATE, SELECTED_OPTIONS);
+        if (
+          SELECTED_DATE != moment().format("YYYY-MM-DD") &&
+          SELECTED_OPTIONS.length != 0
+        ) {
+          generateMap(SELECTED_DATE, SELECTED_OPTIONS);
+        }
+      });
+    </script>
+  </body>
 </html>
