@@ -5,6 +5,7 @@ from flask import Blueprint, request, render_template, redirect
 from folium import Map, Marker, GeoJson, folium, Icon
 from shapely import wkt
 
+from src.data.storages.FiresDataInMemoryStorage import FiresDataInMemoryStorage
 from src.data.storages.WeatherDataInMemoryStorage import WeatherDataInMemoryStorage
 
 index_router = Blueprint('index', __name__)
@@ -15,6 +16,7 @@ def index():
     date = request.args.get('date')
     options = request.args.getlist('options[]')
     return render_template('index.html', date=date, options=options)
+
 
 @index_router.route('/generate_map', methods=['POST'])
 def generate_map():
@@ -30,8 +32,7 @@ def generate_map():
         add_rivers_to_map(m)
 
     if 'regions' in selected_options:
-        print("regions isn't working(")
-        regions_data = 'data/data/MO_Irk_region_32648.geojson'
+        regions_data = 'data/data/MO_Irk_region_4326.geojson'
         with open(regions_data, encoding='utf-8') as f:
             regions_geojson = json.load(f)
 
@@ -48,21 +49,12 @@ def generate_map():
     print("map готова")
     return map_html
 
-def add_fires_to_map(m, target_date):
-    print("fires target_date", target_date)
-    geojson_file = 'data/fires/fires.geojson'
 
-    with open(geojson_file, encoding='utf-8') as f:
-        geojson_data = json.load(f)
-    date = datetime.strptime(target_date, '%Y-%m-%d')  # Целевая дата
+def add_fires_to_map(m, target_date, storage=FiresDataInMemoryStorage()):
+    print("fires target_date", target_date)
 
     # Фильтрация объектов GeoJSON по заданному году и диапазону дат
-    filtered_features = []
-    for feature in geojson_data['features']:
-        dt_start = datetime.strptime(feature['properties']['dt_start'], '%Y-%m-%d %H:%M:%S')
-        dt_end = datetime.strptime(feature['properties']['dt_end'], '%Y-%m-%d %H:%M:%S')
-        if dt_start <= date <= dt_end:
-            filtered_features.append(feature)
+    filtered_features = storage.get_fires_data_by_date(target_date)
 
     # Добавление геоданных областей на карту
     GeoJson(
