@@ -1,1 +1,0 @@
-from src.routers.index import index_router
