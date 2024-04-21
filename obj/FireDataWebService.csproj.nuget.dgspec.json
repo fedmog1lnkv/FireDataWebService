@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "B:\\work\\FireDataWebService\\FireDataWebService\\FireDataWebService.csproj": {}
+    "B:\\work\\FireDataWebService\\FireDataWebService.csproj": {}
   },
   "projects": {
-    "B:\\work\\FireDataWebService\\FireDataWebService\\FireDataWebService.csproj": {
+    "B:\\work\\FireDataWebService\\FireDataWebService.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "B:\\work\\FireDataWebService\\FireDataWebService\\FireDataWebService.csproj",
+        "projectUniqueName": "B:\\work\\FireDataWebService\\FireDataWebService.csproj",
         "projectName": "FireDataWebService",
-        "projectPath": "B:\\work\\FireDataWebService\\FireDataWebService\\FireDataWebService.csproj",
+        "projectPath": "B:\\work\\FireDataWebService\\FireDataWebService.csproj",
         "packagesPath": "C:\\Users\\Fedor Kuznetsov\\.nuget\\packages\\",
-        "outputPath": "B:\\work\\FireDataWebService\\FireDataWebService\\obj\\",
+        "outputPath": "B:\\work\\FireDataWebService\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\Fedor Kuznetsov\\AppData\\Roaming\\NuGet\\NuGet.Config",
