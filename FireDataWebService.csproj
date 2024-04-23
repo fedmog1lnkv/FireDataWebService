@@ -7,4 +7,14 @@
         <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
     </PropertyGroup>
 
+    <ItemGroup>
+      <Folder Include="Assets\Data\" />
+      <Folder Include="Domain\Interactors\" />
+      <Folder Include="wwwroot\" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="GeoJSON.Net" Version="1.3.6-rc" />
+    </ItemGroup>
+
 </Project>

@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GeoJSON Display</title>
+    <!-- Подключаем стили Leaflet и Flatpickr -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <style>
+        #map {
+            height: 500px;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <!-- Добавляем контейнер для карты -->
+    <div id="map"></div>
+    
+    <!-- Добавляем элемент input для выбора даты -->
+    <input type="text" id="datepicker" placeholder="Выберите дату">
+
+    <!-- Подключаем Leaflet и Flatpickr -->
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script>
+        // Создаем карту Leaflet и задаем начальные координаты и уровень масштабирования
+        var map = L.map('map').setView([0, 0], 2);
+        var IS_BASE_MAPS = false;
+
+        // Добавляем базовую карту OpenStreetMap
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        // Инициализируем Flatpickr на элементе input с id="datepicker"
+        flatpickr("#datepicker", {
+            onChange: function(selectedDates, dateStr, instance) {
+                sendSelectedDate(dateStr);
+            }
+        });
+
+        // Функция для отправки выбранной даты на сервер
+        function sendSelectedDate(selectedDate) {
+            fetch('/fires/geojson?requestedDate=' + selectedDate)
+                .then(response => response.json()) // Преобразуем ответ в JSON
+                .then(data => {
+                    console.log(data);
+                    // Удаляем предыдущие слои GeoJSON с карты
+                    map.eachLayer(function (layer) {
+                        if (layer instanceof L.GeoJSON) {
+                            map.removeLayer(layer);
+                        }
+                    });
+
+                    // Создаем слой для мультиполигонов и добавляем его на карту
+                    // Создаем слой для мультиполигонов и добавляем его на карту
+                    var polygonsLayer = L.geoJSON(data, {
+                        filter: function (feature) {
+                            return feature.geometry.geometries[0].type === 'MultiPolygon';
+                        },
+                        style: function (feature) {
+                            return { color: 'red', fillColor: 'orange' }; // Стиль для мультиполигонов
+                    }
+                    }).addTo(map);
+                    
+                    // Создаем слой для точек и добавляем его на карту
+                    var pointsLayer = L.geoJSON(data, {
+                        pointToLayer: function (feature, latlng) {
+                            return L.circleMarker(latlng, {
+                                radius: 8, // Радиус круга
+                                fillColor: 'red', // Цвет заливки
+                                color: 'orange', // Цвет обводки
+                                weight: 2, // Ширина обводки
+                                opacity: 1, // Прозрачность
+                                fillOpacity: 0.8 // Прозрачность заливки
+                            });
+                        },
+                        filter: function (feature) {
+                            return feature.geometry.geometries[0].type === 'Point';
+                        }
+                    }).addTo(map);
+
+                    
+                    // Добавляем контроль слоев
+                    if (!IS_BASE_MAPS){
+                    var baseMaps = {
+                                "Мультиполигоны": polygonsLayer,
+                                "Точки (центроиды)": pointsLayer
+                            };
+                            L.control.layers(baseMaps).addTo(map);
+                    IS_BASE_MAPS=true;}
+                })
+                .catch(error => console.error('Ошибка при получении GeoJSON:', error));
+        }
+    </script>
+</body>
+</html>

@@ -1,14 +1,23 @@
-namespace FireDataWebService;
+using FireDataWebService;
+using FireDataWebService.AppStart;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Hosting;
 
-public class Program
+namespace InteractiveMapWeb
 {
-    public static void Main(string[] args)
+    public class Program
     {
-        var builder = WebApplication.CreateBuilder(args);
-        var app = builder.Build();
+        public static void Main(string[] args)
+        {
+            CreateHostBuilder(args).Build().Run();
+        }
 
-        app.MapGet("/", () => "Hello World!");
-
-        app.Run();
+        public static IHostBuilder CreateHostBuilder(string[] args) =>
+            Host.CreateDefaultBuilder(args)
+                .ConfigureWebHostDefaults(webBuilder =>
+                    {
+                        webBuilder.UseStartup<Startup>();
+                        webBuilder.UseUrls("http://localhost:5000", "https://localhost:5001"); // Указываем порты для HTTP и HTTPS
+                    });
     }
 }

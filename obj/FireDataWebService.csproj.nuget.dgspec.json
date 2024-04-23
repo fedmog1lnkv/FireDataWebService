@@ -40,6 +40,12 @@
       "frameworks": {
         "net8.0": {
           "targetAlias": "net8.0",
+          "dependencies": {
+            "GeoJSON.Net": {
+              "target": "Package",
+              "version": "[1.3.6-rc, )"
+            }
+          },
           "imports": [
             "net461",
             "net462",
