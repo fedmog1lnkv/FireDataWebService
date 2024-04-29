@@ -58,7 +58,7 @@ namespace FireDataWebService.Controllers
 
                 var properties = new Dictionary<string, object>
                 {
-                    { "Unnamed: 0", fireData.Id },
+                    { "id", fireData.Id },
                     { "new_fire_id_unique", fireData.NewFireIdUnique },
                     { "area", fireData.Area },
                     { "dt_start", fireData.DtStart.ToString("yyyy-MM-dd HH:mm:ss") },

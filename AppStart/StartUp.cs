@@ -34,6 +34,15 @@ namespace FireDataWebService.AppStart
                     return new FireRepository(firesCsvFilePath);
                 });
             services.AddSingleton<FireInMemoryStorage>();
+            
+            services.AddSingleton<IWeatherRepository>(provider =>
+                {
+                    var weatherCsvFilePath = Configuration["WeatherCsvFilePath"];
+    
+                    return new WeatherRepository(weatherCsvFilePath);
+                });
+            services.AddSingleton<WeatherInMemoryStorage>();
+
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
@@ -44,6 +53,10 @@ namespace FireDataWebService.AppStart
             }
 
             app.UseRouting();
+            
+            app.UseCors("AllowOrigin");
+
+            app.UseStaticFiles();
 
             app.UseEndpoints(endpoints =>
                 {

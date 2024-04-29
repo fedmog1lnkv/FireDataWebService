@@ -1,99 +1,175 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GeoJSON Display</title>
-    <!-- Подключаем стили Leaflet и Flatpickr -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-    <style>
-        #map {
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>GeoJSON Display</title>
+        <!-- Подключаем стили Leaflet и Flatpickr -->
+        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+        <style>
+            #map {
             height: 500px;
             width: 100%;
-        }
-    </style>
-</head>
-<body>
-    <!-- Добавляем контейнер для карты -->
-    <div id="map"></div>
-    
-    <!-- Добавляем элемент input для выбора даты -->
-    <input type="text" id="datepicker" placeholder="Выберите дату">
-
-    <!-- Подключаем Leaflet и Flatpickr -->
-    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-    <script>
-        // Создаем карту Leaflet и задаем начальные координаты и уровень масштабирования
-        var map = L.map('map').setView([0, 0], 2);
-        var IS_BASE_MAPS = false;
-
-        // Добавляем базовую карту OpenStreetMap
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        }).addTo(map);
-
-        // Инициализируем Flatpickr на элементе input с id="datepicker"
-        flatpickr("#datepicker", {
-            onChange: function(selectedDates, dateStr, instance) {
-                sendSelectedDate(dateStr);
             }
-        });
+        </style>
+    </head>
+    <body>
+        <!-- Добавляем чекбоксы для выбора данных -->
+        <input type="checkbox" id="weatherCheckbox" checked> Погода
+        <input type="checkbox" id="fireCheckbox" checked> Пожары
+        <!-- Добавляем контейнер для карты -->
+        <div id="map"></div>
+        <!-- Добавляем элемент input для выбора даты -->
+        <input type="text" id="datepicker" placeholder="Выберите дату">
+        <!-- Подключаем Leaflet и Flatpickr -->
+        <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+        <script>
+            // Создаем карту Leaflet и задаем начальные координаты и уровень масштабирования
+            var map = L.map('map').setView([0, 0], 2);
+            var weatherLayerGroup = L.layerGroup(); // Группа слоев для данных о погоде
+            var fireLayerGroup = L.layerGroup(); // Группа слоев для данных о пожарах
+            
+            var overlayMaps = {
+                "Weather": weatherLayerGroup,
+                "Fires": fireLayerGroup
+            };            
+            var layerControl = L.control.layers(null, overlayMaps).addTo(map);
+            // Добавляем базовую карту OpenStreetMap
+            var baseLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }).addTo(map);
+            
+            // Инициализируем Flatpickr на элементе input с id="datepicker"
+            flatpickr("#datepicker", {
+                onChange: function(selectedDates, dateStr, instance) {
+                    fetchData(dateStr);
+                }
+            });
+            
+            // Обработчики событий для чекбоксов
+            document.getElementById('weatherCheckbox').addEventListener('change', function() {
+                fetchData(document.getElementById('datepicker').value);
+            });
+            
+            document.getElementById('fireCheckbox').addEventListener('change', function() {
+                fetchData(document.getElementById('datepicker').value);
+            });
+            
+            // Функция для отправки выбранной даты на сервер и отображения данных на карте
+            function fetchData(selectedDate) {
+                var weatherChecked = document.getElementById("weatherCheckbox").checked;
+                var fireChecked = document.getElementById("fireCheckbox").checked;
+                weatherLayerGroup.clearLayers();
+                fireLayerGroup.clearLayers();
+            
+                // Если выбраны данные о погоде, вызываем соответствующую функцию
+                if (weatherChecked) {
+                    fetchWeatherData(selectedDate);
+                }
+            
+                // Если выбраны данные о пожарах, вызываем соответствующую функцию
+                if (fireChecked) {
+                    fetchFireData(selectedDate);
+                }
+            }
+            
+            var weatherIcon = L.icon({
+                iconUrl: 'Icons/weather.png',
+                iconSize: [32, 37],
+                iconAnchor: [15, 34],
+                popupAnchor: [15, 3]
+            });
+            
+            // Функция для получения и отображения данных о погоде
+            function fetchWeatherData(selectedDate) {
+                fetch('/weather/geojson?requestedDate=' + selectedDate)
+                    .then(response => response.json())
+                    .then(data => {
+                        // Удаляем предыдущие слои данных о погоде
+                        weatherLayerGroup.clearLayers();
+            
+                        // Отображаем новые данные о погоде на карте
+                        L.geoJSON(data, {
+                            style: function (feature) {
+                                return { color: 'blue', fillColor: 'lightblue' }; // Стиль для данных о погоде
+                            },
+                            pointToLayer: function (feature, latlng) {
+                                // Создаем маркер и привязываем к нему попап
+                                var marker = L.marker(latlng, { icon: weatherIcon }).on('click', function (e) {
+                                    var popupContent = '<b>Id метеостанции:</b> ' + feature.properties.weather_station_id + '<br>' +
+                                                       '<b>Средняя температура за день:</b> ' + feature.properties.T + '<br>' +
+                                                       '<b>Средняя скорость ветра за день:</b> ' + feature.properties.Ff + '<br>' +
+                                                       '<b>Среднее атмосферное давление за день:</b> ' + feature.properties.P + '<br>' +
+                                                       '<b>Средняя влажность воздуха за день:</b> ' + feature.properties.U + '<br>' +
+                                                       '<b>Скорость ветра:</b> ' + feature.properties.V + '<br>' +
+                                                       '<b>Ежедневное количество осадков:</b> ' + feature.properties.RRR + '<br>' +
+                                                       '<b>Тип погодного явления:</b> ' + feature.properties.WW_type;
+            
+                                    // Создаем новый попап и открываем его
+                                    L.popup()
+                                        .setLatLng(latlng)
+                                        .setContent(popupContent)
+                                        .openOn(map);
+                                });
+            
+                                return marker;
+                            }
+                        }).addTo(weatherLayerGroup);
+                    })
+                    .catch(error => console.error('Ошибка при получении данных о погоде:', error));
+            }
+            var fireIcon = L.icon({
+                iconUrl: 'Icons/fire.png',
+                iconSize: [32, 37],
+                iconAnchor: [15, 34],
+                popupAnchor: [15, 3]
+            });
+            // Функция для определения стиля маркера в зависимости от типа объекта
+            function PoIstile(feature, latlng) {
+                // Проверяем, есть ли у объекта второй элемент geometries
+                return L.marker(latlng, {icon: fireIcon});
+            }
 
-        // Функция для отправки выбранной даты на сервер
-        function sendSelectedDate(selectedDate) {
-            fetch('/fires/geojson?requestedDate=' + selectedDate)
-                .then(response => response.json()) // Преобразуем ответ в JSON
-                .then(data => {
-                    console.log(data);
-                    // Удаляем предыдущие слои GeoJSON с карты
-                    map.eachLayer(function (layer) {
-                        if (layer instanceof L.GeoJSON) {
-                            map.removeLayer(layer);
-                        }
-                    });
+            
+            // Функция для получения и отображения данных о пожарах
+            function fetchFireData(selectedDate) {
+                fetch('/fires/geojson?requestedDate=' + selectedDate)
+                    .then(response => response.json())
+                    .then(data => {
+                        // Удаляем предыдущие слои GeoJSON с карты
+                        fireLayerGroup.clearLayers();
+            
+                        // Отображаем новые данные о пожарах на карте
+                        L.geoJSON(data, {
+                            style: function (feature) {
+                                return { fillColor: 'red', fillOpacity: 0.5, color: 'red' };
+                            },
+                            pointToLayer: function (feature, latlng) {
+                                // Создаем маркер и привязываем к нему попап
+                                var marker = L.marker(latlng, { icon: fireIcon }).on('click', function (e) {
+                                    var popupContent = '<b>Id пожара:</b> ' + feature.properties.id + '<br>' +
+                                                       '<b>Площадь пожара:</b> ' + feature.properties.area + '<br>' +
+                                                       '<b>Дата начала пожара:</b> ' + feature.properties.dt_start + '<br>' +
+                                                       '<b>Дата конца пожара:</b> ' + feature.properties.dt_end + '<br>' +
+                                                       '<b>Длительность:</b> ' + feature.properties.duration + '<br>' +
+                                                       '<b>Тип пожара:</b> ' + feature.properties.type;
+            
+                                    // Создаем новый попап и открываем его
+                                    L.popup()
+                                        .setLatLng(latlng)
+                                        .setContent(popupContent)
+                                        .openOn(map);
+                                });
+                                return marker;
+                            }
+                        }).addTo(fireLayerGroup);
+                    })
+                    .catch(error => console.error('Ошибка при получении данных о пожарах:', error));
+            }
 
-                    // Создаем слой для мультиполигонов и добавляем его на карту
-                    // Создаем слой для мультиполигонов и добавляем его на карту
-                    var polygonsLayer = L.geoJSON(data, {
-                        filter: function (feature) {
-                            return feature.geometry.geometries[0].type === 'MultiPolygon';
-                        },
-                        style: function (feature) {
-                            return { color: 'red', fillColor: 'orange' }; // Стиль для мультиполигонов
-                    }
-                    }).addTo(map);
-                    
-                    // Создаем слой для точек и добавляем его на карту
-                    var pointsLayer = L.geoJSON(data, {
-                        pointToLayer: function (feature, latlng) {
-                            return L.circleMarker(latlng, {
-                                radius: 8, // Радиус круга
-                                fillColor: 'red', // Цвет заливки
-                                color: 'orange', // Цвет обводки
-                                weight: 2, // Ширина обводки
-                                opacity: 1, // Прозрачность
-                                fillOpacity: 0.8 // Прозрачность заливки
-                            });
-                        },
-                        filter: function (feature) {
-                            return feature.geometry.geometries[0].type === 'Point';
-                        }
-                    }).addTo(map);
 
-                    
-                    // Добавляем контроль слоев
-                    if (!IS_BASE_MAPS){
-                    var baseMaps = {
-                                "Мультиполигоны": polygonsLayer,
-                                "Точки (центроиды)": pointsLayer
-                            };
-                            L.control.layers(baseMaps).addTo(map);
-                    IS_BASE_MAPS=true;}
-                })
-                .catch(error => console.error('Ошибка при получении GeoJSON:', error));
-        }
-    </script>
-</body>
+        </script>
+    </body>
 </html>
