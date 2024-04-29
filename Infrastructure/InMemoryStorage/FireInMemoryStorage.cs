@@ -31,5 +31,14 @@ namespace InteractiveMapWeb.Infrastructure.InMemoryStorage
             }
             return filteredFires;
         }
+
+        public List<FireDataModel> FilterFiresByDateRange(DateTime? startDate, DateTime? endDate)
+        {
+            var filteredFires = _fires
+                .Where(fire => fire.DtStart <= endDate && fire.DtEnd >= startDate)
+                .ToList();
+
+            return filteredFires;
+        }
     }
 }

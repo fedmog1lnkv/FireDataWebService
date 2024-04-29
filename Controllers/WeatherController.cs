@@ -21,15 +21,26 @@ namespace FireDataWebService.Controllers
         }
 
         [HttpGet("geojson")]
-        public async Task<IActionResult> GetWeatherGeoJson(DateTime? requestedDate = null)
+        public async Task<IActionResult> GetWeatherGeoJson(DateTime? requestedDate = null, DateTime? endDate = null)
         {
-            var weather = _weatherStorage.GetAllWeather();
-            if (requestedDate != null)
+            List<WeatherDataModel> weather;
+
+            if (requestedDate == null && endDate == null)
+            {
+                weather = _weatherStorage.GetAllWeather();
+            }
+            else if (requestedDate != null && endDate == null)
             {
                 weather = _weatherStorage.FilterWeatherByDate(requestedDate);
             }
+            else
+            {
+                weather = _weatherStorage.FilterWeatherByDateRange(requestedDate, endDate);
+            }
+
             Console.WriteLine($"Number of weather stations: {weather.Count}");
             var geoJson = SerializeToGeoJson(weather);
+
             return Ok(geoJson);
         }
 
@@ -41,7 +52,10 @@ namespace FireDataWebService.Controllers
                 geometry = new
                 {
                     type = "Point",
-                    coordinates = new[] { data.Lon, data.Lat }
+                    coordinates = new[]
+                    {
+                        data.Lon, data.Lat
+                    }
                 },
                 properties = new
                 {

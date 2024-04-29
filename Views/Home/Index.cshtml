@@ -1,31 +1,73 @@
 <!DOCTYPE html>
 <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>GeoJSON Display</title>
-        <!-- Подключаем стили Leaflet и Flatpickr -->
-        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-        <style>
-            #map {
-            height: 500px;
-            width: 100%;
-            }
-        </style>
-    </head>
-    <body>
-        <!-- Добавляем чекбоксы для выбора данных -->
-        <input type="checkbox" id="weatherCheckbox" checked> Погода
-        <input type="checkbox" id="fireCheckbox" checked> Пожары
-        <!-- Добавляем контейнер для карты -->
-        <div id="map"></div>
-        <!-- Добавляем элемент input для выбора даты -->
-        <input type="text" id="datepicker" placeholder="Выберите дату">
-        <!-- Подключаем Leaflet и Flatpickr -->
-        <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
-        <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-        <script>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GeoJSON Display</title>
+    <!-- Подключаем стили Leaflet и Flatpickr -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <link rel="stylesheet" href="Style/main.css"/>
+</head>
+<body>
+<div class="header">
+    <h5>FireDataWebService</h5>
+    <div class="powered-by">
+        powered by Fedmog1lnkv
+    </div>
+</div>
+<div class="container-fluid">
+    <div class="row">
+        <!-- Левая колонка для карты -->
+        <div class="col-md-9">
+            <!-- Добавляем контейнер для карты -->
+            <div id="map"></div>
+        </div>
+        <!-- Правая колонка для выбора даты и таблицы -->
+        <div class="col-md-3">
+            <!-- Добавляем контейнер для элемента выбора даты -->
+            <div class="date-picker-container mb-3">
+                <input type="text" id="datepicker" placeholder="Выберите дату" class="form-control">
+            </div>
+            <!-- Добавляем контейнер для таблицы -->
+            <div class="table-container">
+                <h5>Информация</h5>
+                <table class="table table-bordered table-striped h-100">
+                    <tbody>
+                        <tr>
+                            <td>Количество пожаров:</td>
+                            <td id="fireCount">0</td>
+                        </tr>
+                        <tr>
+                            <td>Площадь пожаров:</td>
+                            <td id="fireArea">0</td>
+                        </tr>
+                        <tr>
+                            <td>Средняя температура:</td>
+                            <td id="avgTemperature">0</td>
+                        </tr>
+                        <tr>
+                            <td>Среднее количество осадков:</td>
+                            <td id="precipitationCount">0</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <!-- Добавляем контейнер для круговой диаграммы -->
+            <div id="pieChartContainer">
+                <!-- Здесь будет отображаться круговая диаграмма -->
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- Подключаем Leaflet и Flatpickr -->
+<script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
             // Создаем карту Leaflet и задаем начальные координаты и уровень масштабирования
             var map = L.map('map').setView([0, 0], 2);
             var weatherLayerGroup = L.layerGroup(); // Группа слоев для данных о погоде
@@ -43,34 +85,28 @@
             
             // Инициализируем Flatpickr на элементе input с id="datepicker"
             flatpickr("#datepicker", {
+                mode: "range",
                 onChange: function(selectedDates, dateStr, instance) {
                     fetchData(dateStr);
                 }
             });
             
-            // Обработчики событий для чекбоксов
-            document.getElementById('weatherCheckbox').addEventListener('change', function() {
-                fetchData(document.getElementById('datepicker').value);
-            });
-            
-            document.getElementById('fireCheckbox').addEventListener('change', function() {
-                fetchData(document.getElementById('datepicker').value);
-            });
-            
             // Функция для отправки выбранной даты на сервер и отображения данных на карте
             function fetchData(selectedDate) {
-                var weatherChecked = document.getElementById("weatherCheckbox").checked;
-                var fireChecked = document.getElementById("fireCheckbox").checked;
                 weatherLayerGroup.clearLayers();
                 fireLayerGroup.clearLayers();
-            
-                // Если выбраны данные о погоде, вызываем соответствующую функцию
-                if (weatherChecked) {
+                
+                console.log(selectedDate);
+                
+                var dates = selectedDate.split(' to ');
+                if (dates.length === 2) {
+                    var startDate = dates[0];
+                    var endDate = dates[1];
+                    
+                    fetchWeatherData(startDate, endDate);
+                    fetchFireData(startDate, endDate);
+                } else {
                     fetchWeatherData(selectedDate);
-                }
-            
-                // Если выбраны данные о пожарах, вызываем соответствующую функцию
-                if (fireChecked) {
                     fetchFireData(selectedDate);
                 }
             }
@@ -83,13 +119,37 @@
             });
             
             // Функция для получения и отображения данных о погоде
-            function fetchWeatherData(selectedDate) {
-                fetch('/weather/geojson?requestedDate=' + selectedDate)
+            function fetchWeatherData(startDate, endDate) {
+                var url = '/weather/geojson?requestedDate=';
+            
+                if (!endDate) {
+                    url += startDate;
+                } else {
+                    url += startDate + '&endDate=' + endDate;
+                }
+            
+                // Выполняем запрос данных о погоде
+                fetch(url)
                     .then(response => response.json())
                     .then(data => {
-                        // Удаляем предыдущие слои данных о погоде
-                        weatherLayerGroup.clearLayers();
-            
+                        
+                        var totalTemperature = 0;
+                        var totalPrecipitation = 0;
+                        var stationsCount = 0;
+                        
+                        data.features.forEach(station => {
+                            totalTemperature += station.properties.T || 0;
+                            totalPrecipitation += station.properties.RRR || 0;
+                            stationsCount++;
+                        });
+                        
+                        var avgTemperature = totalTemperature / stationsCount;
+                        var avgPrecipitation = totalPrecipitation;
+                        
+                        // Обновляем содержимое элементов таблицы
+                        document.getElementById('avgTemperature').textContent = avgTemperature.toFixed(2);
+                        document.getElementById('precipitationCount').textContent = avgPrecipitation.toFixed(2);
+
                         // Отображаем новые данные о погоде на карте
                         L.geoJSON(data, {
                             style: function (feature) {
@@ -99,12 +159,12 @@
                                 // Создаем маркер и привязываем к нему попап
                                 var marker = L.marker(latlng, { icon: weatherIcon }).on('click', function (e) {
                                     var popupContent = '<b>Id метеостанции:</b> ' + feature.properties.weather_station_id + '<br>' +
-                                                       '<b>Средняя температура за день:</b> ' + feature.properties.T + '<br>' +
-                                                       '<b>Средняя скорость ветра за день:</b> ' + feature.properties.Ff + '<br>' +
-                                                       '<b>Среднее атмосферное давление за день:</b> ' + feature.properties.P + '<br>' +
-                                                       '<b>Средняя влажность воздуха за день:</b> ' + feature.properties.U + '<br>' +
+                                                       '<b>Средняя температура:</b> ' + feature.properties.T + '<br>' +
+                                                       '<b>Средняя скорость ветра:</b> ' + feature.properties.Ff + '<br>' +
+                                                       '<b>Среднее атмосферное давление:</b> ' + feature.properties.P + '<br>' +
+                                                       '<b>Средняя влажность воздуха:</b> ' + feature.properties.U + '<br>' +
                                                        '<b>Скорость ветра:</b> ' + feature.properties.V + '<br>' +
-                                                       '<b>Ежедневное количество осадков:</b> ' + feature.properties.RRR + '<br>' +
+                                                       '<b>Количество осадков:</b> ' + feature.properties.RRR + '<br>' +
                                                        '<b>Тип погодного явления:</b> ' + feature.properties.WW_type;
             
                                     // Создаем новый попап и открываем его
@@ -117,9 +177,49 @@
                                 return marker;
                             }
                         }).addTo(weatherLayerGroup);
+                        
+                        var weatherTypesCount = {};
+                        
+                            // Перебираем каждую запись о погоде
+                            data.features.forEach(feature => {
+                                // Проверяем, существует ли объект свойства 'properties' и 'type' в нем
+                                if (feature.properties.WW_type) {
+                                    // Получаем типы погодных явлений для данной записи
+                                    var types = feature.properties.WW_type.split(',');
+                        
+                                    // Перебираем каждый тип погодного явления
+                                    types.forEach(type => {
+                                        // Убираем лишние пробелы с начала и конца строки
+                                        type = type.trim();
+                        
+                                        // Если такой тип уже существует, увеличиваем его счетчик на 1
+                                        if (weatherTypesCount[type]) {
+                                            weatherTypesCount[type]++;
+                                        } else {
+                                            // Если типа нет в объекте, добавляем его и устанавливаем счетчик на 1
+                                            weatherTypesCount[type] = 1;
+                                        }
+                                    });
+                                }
+                            });
+
+                        var weatherTypesData = [];
+                        for (var type in weatherTypesCount) {
+                            weatherTypesData.push({
+                                label: type,
+                                value: weatherTypesCount[type]
+                            });
+                        }
+                        
+                        console.log(weatherTypesCount)
+                        
+                        // Отображаем круговую диаграмму
+                        renderPieChart(weatherTypesData);
+
                     })
                     .catch(error => console.error('Ошибка при получении данных о погоде:', error));
             }
+
             var fireIcon = L.icon({
                 iconUrl: 'Icons/fire.png',
                 iconSize: [32, 37],
@@ -134,13 +234,23 @@
 
             
             // Функция для получения и отображения данных о пожарах
-            function fetchFireData(selectedDate) {
-                fetch('/fires/geojson?requestedDate=' + selectedDate)
+            function fetchFireData(startDate, endDate) {
+                var url = '/fires/geojson?requestedDate=';
+                            
+                if (!endDate) {
+                    url += startDate;
+                } else {
+                    url += startDate + '&endDate=' + endDate;
+                }
+                fetch(url)
                     .then(response => response.json())
                     .then(data => {
-                        // Удаляем предыдущие слои GeoJSON с карты
-                        fireLayerGroup.clearLayers();
-            
+                        
+                        document.getElementById('fireCount').innerText = data.features.length; // Количество пожаров
+                        
+                        var totalArea = data.features.reduce((acc, cur) => acc + cur.properties.area, 0);
+                        document.getElementById('fireArea').innerText = totalArea.toFixed(2); // Общая площадь пожаров
+
                         // Отображаем новые данные о пожарах на карте
                         L.geoJSON(data, {
                             style: function (feature) {
@@ -169,7 +279,51 @@
                     .catch(error => console.error('Ошибка при получении данных о пожарах:', error));
             }
 
+function renderPieChart(data) {
+    // Получаем контейнер для круговой диаграммы
+    var pieChartContainer = document.getElementById('pieChartContainer');
+    
+    // Очищаем контейнер перед отрисовкой новой диаграммы
+    pieChartContainer.innerHTML = '';
+    
+    // Создаем canvas элемент для диаграммы
+    var canvas = document.createElement('canvas');
+    pieChartContainer.appendChild(canvas);
+    
+    canvas.width = pieChartContainer.clientWidth;
+    canvas.height = pieChartContainer.clientHeight;
+    
+    var ctx = canvas.getContext('2d');
+    
+    // Создаем новый объект круговой диаграммы
+    var chart = new Chart(ctx, {
+        type: 'pie',
+        data: {
+            labels: data.map(item => item.label),
+            datasets: [{
+                data: data.map(item => item.value)
+            }]
+        },
+        options: {
+            responsive: false,
+            legend: {
+                display: true,
+                position: 'bottom'
+            }
+        }
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Загружаем страницу
+    renderEmptyPieChart();
+});
+
+function renderEmptyPieChart() {
+    var emptyData = [{ label: 'Выберите дату', value: 1 }];
+    renderPieChart(emptyData);
+}
 
         </script>
-    </body>
+</body>
 </html>

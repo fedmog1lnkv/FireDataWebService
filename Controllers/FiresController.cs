@@ -24,12 +24,21 @@ namespace FireDataWebService.Controllers
         }
 
         [HttpGet("geojson")]
-        public async Task<IActionResult> GetFiresGeoJson(DateTime? requestedDate = null)
+        public async Task<IActionResult> GetFiresGeoJson(DateTime? requestedDate = null, DateTime? endDate = null)
         {
-            var fires = _fireStorage.GetAllFires();
-            if (requestedDate != null)
+            List<FireDataModel> fires;
+            if (requestedDate == null && endDate == null)
+            {
+                fires = _fireStorage.GetAllFires();
+            }
+            else if (requestedDate != null && endDate == null)
             {
                 fires = _fireStorage.FilterFiresByDate(requestedDate);
+            }
+            else
+            {
+                Console.WriteLine("FilterFiresByDateRange");
+                fires = _fireStorage.FilterFiresByDateRange(requestedDate, endDate);
             }
 
             Console.WriteLine($"Number of fires: {fires.Count()}");
