@@ -23,6 +23,12 @@ namespace FireDataWebService.AppStart
             services.AddControllersWithViews();
 
             services.AddControllers();
+            
+            services.Configure<StaticFileOptions>(options =>
+                {
+                    options.ServeUnknownFileTypes = true;
+                    options.DefaultContentType = "application/json";
+                });
 
             // Регистрация репозиториев
             services.AddSingleton<IFireRepository>(provider =>

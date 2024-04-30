@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("FireDataWebService")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+0431dd49e3b488e3106597baf539470c860e453f")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+4df4127cda83beb27077bcd81c81a83d981f7320")]
 [assembly: System.Reflection.AssemblyProductAttribute("FireDataWebService")]
 [assembly: System.Reflection.AssemblyTitleAttribute("FireDataWebService")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

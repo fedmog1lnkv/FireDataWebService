@@ -19,18 +19,13 @@
 </div>
 <div class="container-fluid">
     <div class="row">
-        <!-- Левая колонка для карты -->
         <div class="col-md-9">
-            <!-- Добавляем контейнер для карты -->
             <div id="map"></div>
         </div>
-        <!-- Правая колонка для выбора даты и таблицы -->
         <div class="col-md-3">
-            <!-- Добавляем контейнер для элемента выбора даты -->
             <div class="date-picker-container mb-3">
                 <input type="text" id="datepicker" placeholder="Выберите дату" class="form-control">
             </div>
-            <!-- Добавляем контейнер для таблицы -->
             <div class="table-container">
                 <h5>Информация</h5>
                 <table class="table table-bordered table-striped h-100">
@@ -54,9 +49,7 @@
                     </tbody>
                 </table>
             </div>
-            <!-- Добавляем контейнер для круговой диаграммы -->
             <div id="pieChartContainer">
-                <!-- Здесь будет отображаться круговая диаграмма -->
             </div>
         </div>
     </div>
@@ -67,17 +60,159 @@
 <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/georaster@1.6.0/dist/georaster.browser.bundle.min.js"></script>
+<script src="https://unpkg.com/georaster-layer-for-leaflet/dist/georaster-layer-for-leaflet.min.js"></script>
 <script>
             // Создаем карту Leaflet и задаем начальные координаты и уровень масштабирования
-            var map = L.map('map').setView([0, 0], 2);
+            var map = L.map('map').setView([57.22, 106], 5);
+           
+
+
+            
+            
+            // Функция для загрузки и отображения GeoJSON файлов
+            
+                // Загрузка GeoJSON файла с регионами
+                var regionsGeoJSONFile = "Data/regions.geojson";
+                var riversGeoJSONFile = "Data/rivers.geojson";
+                fetch(regionsGeoJSONFile)
+                    .then(response => response.json())
+                    .then(data => {
+                        // Создание слоя и добавление его на карту
+                        var regionsLayer = L.geoJSON(data, {
+                            style: function (feature) {
+                                return { color: 'green', fillColor: 'lightgreen', opacity: 0.5 }; // Стиль для регионов
+                            }
+                        });
+                        regionsLayer.eachLayer(function (layer) {
+                            // Получаем название региона из свойства GeoJSON-объекта
+                            var regionName = layer.feature.properties.name;
+                            
+                            // Привязываем tooltip к каждому географическому объекту (региону)
+                            layer.bindTooltip(regionName);
+                        });
+                        
+                        // Добавление слоя в контроль слоев
+                        layerControl.addOverlay(regionsLayer, "Regions");
+                    })
+                    .catch(error => console.error('Ошибка загрузки GeoJSON файла с регионами:', error));
+                
+                // Загрузка GeoJSON файла с реками
+                fetch(riversGeoJSONFile)
+                    .then(response => response.json())
+                    .then(data => {
+                        // Создание слоя и добавление его на карту
+                        var riversLayer = L.geoJSON(data, {
+                            style: function (feature) {
+                                return { color: 'blue', weight: 2 }; // Стиль для рек
+                            }
+                        });
+                        
+                        riversLayer.eachLayer(function (layer) {
+                            // Получаем название региона из свойства GeoJSON-объекта
+                            var riverName = layer.feature.properties.name;
+                            
+                            // Привязываем tooltip к каждому географическому объекту (региону)
+                            layer.bindTooltip(riverName);
+                        });
+                        
+                        // Добавление слоя в контроль слоев
+                        layerControl.addOverlay(riversLayer, "Rivers");
+                    })
+                    .catch(error => console.error('Ошибка загрузки GeoJSON файла с реками:', error));
+            
+            
+            // Вызов функции для загрузки и отображения GeoJSON файлов
+            
+            
+            
+            
+            
+            
+            
             var weatherLayerGroup = L.layerGroup(); // Группа слоев для данных о погоде
             var fireLayerGroup = L.layerGroup(); // Группа слоев для данных о пожарах
             
             var overlayMaps = {
                 "Weather": weatherLayerGroup,
                 "Fires": fireLayerGroup
-            };            
+            };
+                        
+            var slopeFile = "Data/topographic/slope.tif";
+            var slopeLayer;
+            
+            fetch(slopeFile)
+                .then(response => response.arrayBuffer())
+                .then(arrayBuffer => {
+                    parseGeoraster(arrayBuffer).then(georaster => {
+                        slopeLayer = new GeoRasterLayer({
+                            georaster: georaster,
+                            opacity: 0.7,
+                            resolution: 256
+                        });
+                        // Добавляем слой на карту
+                       // slopeLayer.addTo(map);
+                        // Добавляем слой в control слоев
+                        layerControl.addBaseLayer(slopeLayer, "Slope");
+                    });
+                })
+                .catch(error => {
+                    console.error('Ошибка загрузки GeoTIFF:', error);
+                });
+            
+var elevationFile = "Data/topographic/elevation.tif";
+var aspectFile = "Data/topographic/aspect.tif";
+
+var elevationLayer;
+var aspectLayer;
+
+// Загрузка elevation.tiff
+fetch(elevationFile)
+    .then(response => response.arrayBuffer())
+    .then(arrayBuffer => {
+        parseGeoraster(arrayBuffer).then(georaster => {
+            elevationLayer = new GeoRasterLayer({
+                georaster: georaster,
+                opacity: 0.7,
+                resolution: 256
+            });
+            // Добавляем слой на карту
+           // elevationLayer.addTo(map);
+            // Добавляем слой в control слоев
+            layerControl.addBaseLayer(elevationLayer, "Elevation");
+        });
+    })
+    .catch(error => {
+        console.error('Ошибка загрузки GeoTIFF для elevation:', error);
+    });
+
+         // Загрузка aspect.tiff
+        fetch(aspectFile)
+            .then(response => response.arrayBuffer())
+            .then(arrayBuffer => {
+                parseGeoraster(arrayBuffer).then(georaster => {
+                    aspectLayer = new GeoRasterLayer({
+                        georaster: georaster,
+                        opacity: 0.7,
+                        resolution: 256
+                    });
+                    // Добавляем слой на карту
+                    // aspectLayer.addTo(map);
+                    // Добавляем слой в control слоев
+                     layerControl.addBaseLayer(aspectLayer, "Aspect");
+                });
+            })
+            .catch(error => {
+                console.error('Ошибка загрузки GeoTIFF для aspect:', error);
+            });
+
+            var emptyBaseLayer = L.tileLayer('');
+            
+            // Добавляем пустой базовый слой на карту
+            emptyBaseLayer.addTo(map);
+
             var layerControl = L.control.layers(null, overlayMaps).addTo(map);
+            layerControl.addBaseLayer(emptyBaseLayer, "No Data");
             // Добавляем базовую карту OpenStreetMap
             var baseLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -232,7 +367,6 @@
                 return L.marker(latlng, {icon: fireIcon});
             }
 
-            
             // Функция для получения и отображения данных о пожарах
             function fetchFireData(startDate, endDate) {
                 var url = '/fires/geojson?requestedDate=';
