@@ -1,463 +1,166 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GeoJSON Display</title>
-    <!-- Подключаем стили Leaflet и Flatpickr -->
+    <title>FireDataWebService</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"/>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-    <link rel="stylesheet" href="Style/main.css"/>
+    <link rel="stylesheet" href="Style/main.css" />
 </head>
+
 <body>
-<div class="header">
-    <h5>FireDataWebService</h5>
-    <div class="powered-by">
-        powered by Fedmog1lnkv
+    <div id="preloader" style="display: block">
+        <div id="loader"></div>
     </div>
-</div>
-<div class="container-fluid">
-    <div class="row">
-        <div class="col-md-9">
-            <div id="map"></div>
-        </div>
-        <div class="col-md-3">
-            <div class="date-picker-container mb-3">
-                <input type="text" id="datepicker" placeholder="Выберите дату" class="form-control">
-            </div>
-            <div class="table-container">
-                <h5>Информация</h5>
-                <table class="table table-bordered table-striped h-100">
-                    <tbody>
-                        <tr>
-                            <td>Количество пожаров:</td>
-                            <td id="fireCount">0</td>
-                        </tr>
-                        <tr>
-                            <td>Площадь пожаров:</td>
-                            <td id="fireArea">0</td>
-                        </tr>
-                        <tr>
-                            <td>Средняя температура:</td>
-                            <td id="avgTemperature">0</td>
-                        </tr>
-                        <tr>
-                            <td>Среднее количество осадков:</td>
-                            <td id="precipitationCount">0</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-            <div id="pieChartContainer">
-            </div>
+    <div class="header">
+        <h5>FireDataWebService</h5>
+        <div class="powered-by">
+            powered by Fedmog1lnkv
         </div>
     </div>
-</div>
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-9">
+                <div id="map"></div>
+            </div>
+            <div class="col-md-3">
+                <div class="date-picker-container mb-3">
+                    <input type="text" id="datepicker" placeholder="Выберите дату" class="form-control">
+                </div>
+                <div class="table-container">
+                    <h5>Информация</h5>
+                    <table class="table table-bordered table-striped h-100">
+                        <tbody>
+                            <tr>
+                                <td>Количество пожаров:</td>
+                                <td id="fireCount">0</td>
+                            </tr>
+                            <tr>
+                                <td>Площадь пожаров:</td>
+                                <td id="fireArea">0</td>
+                            </tr>
+                            <tr>
+                                <td>Средняя температура:</td>
+                                <td id="avgTemperature">0</td>
+                            </tr>
+                            <tr>
+                                <td>Среднее количество осадков:</td>
+                                <td id="precipitationCount">0</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div id="pieChartContainer">
+                </div>
+            </div>
+        </div>
+    </div>
 
 
-<!-- Подключаем Leaflet и Flatpickr -->
-<script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/georaster@1.6.0/dist/georaster.browser.bundle.min.js"></script>
-<script src="https://unpkg.com/georaster-layer-for-leaflet/dist/georaster-layer-for-leaflet.min.js"></script>
-<script>
-            // Создаем карту Leaflet и задаем начальные координаты и уровень масштабирования
-            var map = L.map('map').setView([57.22, 106], 5);
-           
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/georaster@1.6.0/dist/georaster.browser.bundle.min.js"></script>
+    <script src="https://unpkg.com/georaster-layer-for-leaflet/dist/georaster-layer-for-leaflet.min.js"></script>
+    <script>
+        var map = L.map('map').setView([57.22, 106], 5);
 
+        var weatherLayerGroup = L.layerGroup();
+        var fireLayerGroup = L.layerGroup();
 
-            
-            
-            // Функция для загрузки и отображения GeoJSON файлов
-            
-                // Загрузка GeoJSON файла с регионами
-                var regionsGeoJSONFile = "Data/regions.geojson";
-                var riversGeoJSONFile = "Data/rivers.geojson";
-                fetch(regionsGeoJSONFile)
-                    .then(response => response.json())
-                    .then(data => {
-                        // Создание слоя и добавление его на карту
-                        var regionsLayer = L.geoJSON(data, {
-                            style: function (feature) {
-                                return { color: 'green', fillColor: 'lightgreen', opacity: 0.5 }; // Стиль для регионов
-                            }
-                        });
-                        regionsLayer.eachLayer(function (layer) {
-                            // Получаем название региона из свойства GeoJSON-объекта
-                            var regionName = layer.feature.properties.name;
-                            
-                            // Привязываем tooltip к каждому географическому объекту (региону)
-                            layer.bindTooltip(regionName);
-                        });
-                        
-                        // Добавление слоя в контроль слоев
-                        layerControl.addOverlay(regionsLayer, "Regions");
-                    })
-                    .catch(error => console.error('Ошибка загрузки GeoJSON файла с регионами:', error));
-                
-                // Загрузка GeoJSON файла с реками
-                fetch(riversGeoJSONFile)
-                    .then(response => response.json())
-                    .then(data => {
-                        // Создание слоя и добавление его на карту
-                        var riversLayer = L.geoJSON(data, {
-                            style: function (feature) {
-                                return { color: 'blue', weight: 2 }; // Стиль для рек
-                            }
-                        });
-                        
-                        riversLayer.eachLayer(function (layer) {
-                            // Получаем название региона из свойства GeoJSON-объекта
-                            var riverName = layer.feature.properties.name;
-                            
-                            // Привязываем tooltip к каждому географическому объекту (региону)
-                            layer.bindTooltip(riverName);
-                        });
-                        
-                        // Добавление слоя в контроль слоев
-                        layerControl.addOverlay(riversLayer, "Rivers");
-                    })
-                    .catch(error => console.error('Ошибка загрузки GeoJSON файла с реками:', error));
-            
-            
-            // Вызов функции для загрузки и отображения GeoJSON файлов
-            
-            
-            
-            
-            
-            
-            
-            var weatherLayerGroup = L.layerGroup(); // Группа слоев для данных о погоде
-            var fireLayerGroup = L.layerGroup(); // Группа слоев для данных о пожарах
-            
-            var overlayMaps = {
-                "Weather": weatherLayerGroup,
-                "Fires": fireLayerGroup
-            };
-                        
-            var slopeFile = "Data/topographic/slope.tif";
-            var slopeLayer;
-            
-            fetch(slopeFile)
-                .then(response => response.arrayBuffer())
-                .then(arrayBuffer => {
-                    parseGeoraster(arrayBuffer).then(georaster => {
-                        slopeLayer = new GeoRasterLayer({
-                            georaster: georaster,
-                            opacity: 0.7,
-                            resolution: 256
-                        });
-                        // Добавляем слой на карту
-                       // slopeLayer.addTo(map);
-                        // Добавляем слой в control слоев
-                        layerControl.addBaseLayer(slopeLayer, "Slope");
-                    });
-                })
-                .catch(error => {
-                    console.error('Ошибка загрузки GeoTIFF:', error);
-                });
-            
-var elevationFile = "Data/topographic/elevation.tif";
-var aspectFile = "Data/topographic/aspect.tif";
+        var overlayMaps = {
+            "Weather": weatherLayerGroup,
+            "Fires": fireLayerGroup
+        };
 
-var elevationLayer;
-var aspectLayer;
+        var layerControl = L.control.layers(null, overlayMaps).addTo(map);
+        
+        var emptyBaseLayer = L.tileLayer('');
+        emptyBaseLayer.addTo(map);
+        layerControl.addBaseLayer(emptyBaseLayer, "No Data");
+        
+        var baseLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
 
-// Загрузка elevation.tiff
-fetch(elevationFile)
-    .then(response => response.arrayBuffer())
-    .then(arrayBuffer => {
-        parseGeoraster(arrayBuffer).then(georaster => {
-            elevationLayer = new GeoRasterLayer({
-                georaster: georaster,
-                opacity: 0.7,
-                resolution: 256
-            });
-            // Добавляем слой на карту
-           // elevationLayer.addTo(map);
-            // Добавляем слой в control слоев
-            layerControl.addBaseLayer(elevationLayer, "Elevation");
+        flatpickr("#datepicker", {
+            mode: "range",
+            onChange: function(selectedDates, dateStr, instance) {
+                fetchData(dateStr);
+            }
         });
-    })
-    .catch(error => {
-        console.error('Ошибка загрузки GeoTIFF для elevation:', error);
-    });
 
-         // Загрузка aspect.tiff
-        fetch(aspectFile)
-            .then(response => response.arrayBuffer())
-            .then(arrayBuffer => {
-                parseGeoraster(arrayBuffer).then(georaster => {
-                    aspectLayer = new GeoRasterLayer({
-                        georaster: georaster,
-                        opacity: 0.7,
-                        resolution: 256
-                    });
-                    // Добавляем слой на карту
-                    // aspectLayer.addTo(map);
-                    // Добавляем слой в control слоев
-                     layerControl.addBaseLayer(aspectLayer, "Aspect");
-                });
-            })
-            .catch(error => {
-                console.error('Ошибка загрузки GeoTIFF для aspect:', error);
-            });
+        function fetchData(selectedDate) {
+            weatherLayerGroup.clearLayers();
+            fireLayerGroup.clearLayers();
 
-            var emptyBaseLayer = L.tileLayer('');
-            
-            // Добавляем пустой базовый слой на карту
-            emptyBaseLayer.addTo(map);
+            console.log(selectedDate);
 
-            var layerControl = L.control.layers(null, overlayMaps).addTo(map);
-            layerControl.addBaseLayer(emptyBaseLayer, "No Data");
-            // Добавляем базовую карту OpenStreetMap
-            var baseLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            }).addTo(map);
-            
-            // Инициализируем Flatpickr на элементе input с id="datepicker"
-            flatpickr("#datepicker", {
-                mode: "range",
-                onChange: function(selectedDates, dateStr, instance) {
-                    fetchData(dateStr);
-                }
-            });
-            
-            // Функция для отправки выбранной даты на сервер и отображения данных на карте
-            function fetchData(selectedDate) {
-                weatherLayerGroup.clearLayers();
-                fireLayerGroup.clearLayers();
-                
-                console.log(selectedDate);
-                
-                var dates = selectedDate.split(' to ');
-                if (dates.length === 2) {
-                    var startDate = dates[0];
-                    var endDate = dates[1];
-                    
-                    fetchWeatherData(startDate, endDate);
-                    fetchFireData(startDate, endDate);
-                } else {
-                    fetchWeatherData(selectedDate);
-                    fetchFireData(selectedDate);
-                }
-            }
-            
-            var weatherIcon = L.icon({
-                iconUrl: 'Icons/weather.png',
-                iconSize: [32, 37],
-                iconAnchor: [15, 34],
-                popupAnchor: [15, 3]
-            });
-            
-            // Функция для получения и отображения данных о погоде
-            function fetchWeatherData(startDate, endDate) {
-                var url = '/weather/geojson?requestedDate=';
-            
-                if (!endDate) {
-                    url += startDate;
-                } else {
-                    url += startDate + '&endDate=' + endDate;
-                }
-            
-                // Выполняем запрос данных о погоде
-                fetch(url)
-                    .then(response => response.json())
-                    .then(data => {
-                        
-                        var totalTemperature = 0;
-                        var totalPrecipitation = 0;
-                        var stationsCount = 0;
-                        
-                        data.features.forEach(station => {
-                            totalTemperature += station.properties.T || 0;
-                            totalPrecipitation += station.properties.RRR || 0;
-                            stationsCount++;
-                        });
-                        
-                        var avgTemperature = totalTemperature / stationsCount;
-                        var avgPrecipitation = totalPrecipitation;
-                        
-                        // Обновляем содержимое элементов таблицы
-                        document.getElementById('avgTemperature').textContent = avgTemperature.toFixed(2);
-                        document.getElementById('precipitationCount').textContent = avgPrecipitation.toFixed(2);
+            var dates = selectedDate.split(' to ');
+            if (dates.length === 2) {
+                var startDate = dates[0];
+                var endDate = dates[1];
 
-                        // Отображаем новые данные о погоде на карте
-                        L.geoJSON(data, {
-                            style: function (feature) {
-                                return { color: 'blue', fillColor: 'lightblue' }; // Стиль для данных о погоде
-                            },
-                            pointToLayer: function (feature, latlng) {
-                                // Создаем маркер и привязываем к нему попап
-                                var marker = L.marker(latlng, { icon: weatherIcon }).on('click', function (e) {
-                                    var popupContent = '<b>Id метеостанции:</b> ' + feature.properties.weather_station_id + '<br>' +
-                                                       '<b>Средняя температура:</b> ' + feature.properties.T + '<br>' +
-                                                       '<b>Средняя скорость ветра:</b> ' + feature.properties.Ff + '<br>' +
-                                                       '<b>Среднее атмосферное давление:</b> ' + feature.properties.P + '<br>' +
-                                                       '<b>Средняя влажность воздуха:</b> ' + feature.properties.U + '<br>' +
-                                                       '<b>Скорость ветра:</b> ' + feature.properties.V + '<br>' +
-                                                       '<b>Количество осадков:</b> ' + feature.properties.RRR + '<br>' +
-                                                       '<b>Тип погодного явления:</b> ' + feature.properties.WW_type;
-            
-                                    // Создаем новый попап и открываем его
-                                    L.popup()
-                                        .setLatLng(latlng)
-                                        .setContent(popupContent)
-                                        .openOn(map);
-                                });
-            
-                                return marker;
-                            }
-                        }).addTo(weatherLayerGroup);
-                        
-                        var weatherTypesCount = {};
-                        
-                            // Перебираем каждую запись о погоде
-                            data.features.forEach(feature => {
-                                // Проверяем, существует ли объект свойства 'properties' и 'type' в нем
-                                if (feature.properties.WW_type) {
-                                    // Получаем типы погодных явлений для данной записи
-                                    var types = feature.properties.WW_type.split(',');
-                        
-                                    // Перебираем каждый тип погодного явления
-                                    types.forEach(type => {
-                                        // Убираем лишние пробелы с начала и конца строки
-                                        type = type.trim();
-                        
-                                        // Если такой тип уже существует, увеличиваем его счетчик на 1
-                                        if (weatherTypesCount[type]) {
-                                            weatherTypesCount[type]++;
-                                        } else {
-                                            // Если типа нет в объекте, добавляем его и устанавливаем счетчик на 1
-                                            weatherTypesCount[type] = 1;
-                                        }
-                                    });
-                                }
-                            });
-
-                        var weatherTypesData = [];
-                        for (var type in weatherTypesCount) {
-                            weatherTypesData.push({
-                                label: type,
-                                value: weatherTypesCount[type]
-                            });
-                        }
-                        
-                        console.log(weatherTypesCount)
-                        
-                        // Отображаем круговую диаграмму
-                        renderPieChart(weatherTypesData);
-
-                    })
-                    .catch(error => console.error('Ошибка при получении данных о погоде:', error));
-            }
-
-            var fireIcon = L.icon({
-                iconUrl: 'Icons/fire.png',
-                iconSize: [32, 37],
-                iconAnchor: [15, 34],
-                popupAnchor: [15, 3]
-            });
-            // Функция для определения стиля маркера в зависимости от типа объекта
-            function PoIstile(feature, latlng) {
-                // Проверяем, есть ли у объекта второй элемент geometries
-                return L.marker(latlng, {icon: fireIcon});
-            }
-
-            // Функция для получения и отображения данных о пожарах
-            function fetchFireData(startDate, endDate) {
-                var url = '/fires/geojson?requestedDate=';
-                            
-                if (!endDate) {
-                    url += startDate;
-                } else {
-                    url += startDate + '&endDate=' + endDate;
-                }
-                fetch(url)
-                    .then(response => response.json())
-                    .then(data => {
-                        
-                        document.getElementById('fireCount').innerText = data.features.length; // Количество пожаров
-                        
-                        var totalArea = data.features.reduce((acc, cur) => acc + cur.properties.area, 0);
-                        document.getElementById('fireArea').innerText = totalArea.toFixed(2); // Общая площадь пожаров
-
-                        // Отображаем новые данные о пожарах на карте
-                        L.geoJSON(data, {
-                            style: function (feature) {
-                                return { fillColor: 'red', fillOpacity: 0.5, color: 'red' };
-                            },
-                            pointToLayer: function (feature, latlng) {
-                                // Создаем маркер и привязываем к нему попап
-                                var marker = L.marker(latlng, { icon: fireIcon }).on('click', function (e) {
-                                    var popupContent = '<b>Id пожара:</b> ' + feature.properties.id + '<br>' +
-                                                       '<b>Площадь пожара:</b> ' + feature.properties.area + '<br>' +
-                                                       '<b>Дата начала пожара:</b> ' + feature.properties.dt_start + '<br>' +
-                                                       '<b>Дата конца пожара:</b> ' + feature.properties.dt_end + '<br>' +
-                                                       '<b>Длительность:</b> ' + feature.properties.duration + '<br>' +
-                                                       '<b>Тип пожара:</b> ' + feature.properties.type;
-            
-                                    // Создаем новый попап и открываем его
-                                    L.popup()
-                                        .setLatLng(latlng)
-                                        .setContent(popupContent)
-                                        .openOn(map);
-                                });
-                                return marker;
-                            }
-                        }).addTo(fireLayerGroup);
-                    })
-                    .catch(error => console.error('Ошибка при получении данных о пожарах:', error));
-            }
-
-function renderPieChart(data) {
-    // Получаем контейнер для круговой диаграммы
-    var pieChartContainer = document.getElementById('pieChartContainer');
-    
-    // Очищаем контейнер перед отрисовкой новой диаграммы
-    pieChartContainer.innerHTML = '';
-    
-    // Создаем canvas элемент для диаграммы
-    var canvas = document.createElement('canvas');
-    pieChartContainer.appendChild(canvas);
-    
-    canvas.width = pieChartContainer.clientWidth;
-    canvas.height = pieChartContainer.clientHeight;
-    
-    var ctx = canvas.getContext('2d');
-    
-    // Создаем новый объект круговой диаграммы
-    var chart = new Chart(ctx, {
-        type: 'pie',
-        data: {
-            labels: data.map(item => item.label),
-            datasets: [{
-                data: data.map(item => item.value)
-            }]
-        },
-        options: {
-            responsive: false,
-            legend: {
-                display: true,
-                position: 'bottom'
+                fetchWeatherData(startDate, endDate);
+                fetchFireData(startDate, endDate);
+            } else {
+                fetchWeatherData(selectedDate);
+                fetchFireData(selectedDate);
             }
         }
-    });
-}
 
-document.addEventListener('DOMContentLoaded', function() {
-    // Загружаем страницу
-    renderEmptyPieChart();
-});
+        function renderPieChart(data) {
+            var pieChartContainer = document.getElementById('pieChartContainer');
 
-function renderEmptyPieChart() {
-    var emptyData = [{ label: 'Выберите дату', value: 1 }];
-    renderPieChart(emptyData);
-}
+            pieChartContainer.innerHTML = '';
 
-        </script>
+            var canvas = document.createElement('canvas');
+            pieChartContainer.appendChild(canvas);
+
+            canvas.width = pieChartContainer.clientWidth;
+            canvas.height = pieChartContainer.clientHeight;
+
+            var ctx = canvas.getContext('2d');
+
+            var chart = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: data.map(item => item.label),
+                    datasets: [{
+                        data: data.map(item => item.value)
+                    }]
+                },
+                options: {
+                    responsive: false,
+                    legend: {
+                        display: true,
+                        position: 'bottom'
+                    }
+                }
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            renderEmptyPieChart();
+        });
+        
+        window.addEventListener('load', function() {
+            document.getElementById("preloader").style.display = "none";
+        });
+
+        function renderEmptyPieChart() {
+            var emptyData = [{
+                label: 'Выберите дату',
+                value: 1
+            }];
+            renderPieChart(emptyData);
+        }
+    </script>
+    <script src="Scripts/load-fires-and-weather.js"></script>
+    <script src="Scripts/load-geojson.js"></script>
+    <script src="Scripts/load-tif.js"></script>
 </body>
 </html>

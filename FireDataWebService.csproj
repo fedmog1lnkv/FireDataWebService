@@ -9,7 +9,6 @@
 
     <ItemGroup>
       <Folder Include="Assets\Data\" />
-      <Folder Include="wwwroot\Scripts\" />
     </ItemGroup>
 
     <ItemGroup>
