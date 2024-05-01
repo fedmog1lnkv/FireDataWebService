@@ -164,7 +164,7 @@
         parseUrl();
     
         document.getElementById("shareButton").addEventListener("click", function() {
-            var selectedDate = document.getElementById("datepicker").value;
+            var selectedDate = encodeURIComponent(document.getElementById("datepicker").value);
             var url = window.location.href.split('?')[0] + `?date=${selectedDate}`;
             var activeLayers = Object.keys(overlayMaps).filter(layer => map.hasLayer(overlayMaps[layer]));
         
