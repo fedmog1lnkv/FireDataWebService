@@ -9,7 +9,7 @@ function fetchAndDrawGeoJson(layerName, filepath, style) {
                 var name = layer.feature.properties.name;
                 layer.bindTooltip(name);
             });
-
+            overlayMaps[layerName] = layer;
             layerControl.addOverlay(layer, layerName); // исправляем ошибку - передаем имя слоя как переменную, а не строку "layerName"
         })
         .catch(error => console.error(`Ошибка загрузки GeoJSON файла с ${layerName}:`, error));

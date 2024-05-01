@@ -67,7 +67,6 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/georaster@1.6.0/dist/georaster.browser.bundle.min.js"></script>
     <script src="https://unpkg.com/georaster-layer-for-leaflet/dist/georaster-layer-for-leaflet.min.js"></script>
-    <script src="Scripts/parse-url.js"></script>
     <script>
         var map = L.map('map').setView([57.22, 106], 5);
 
@@ -88,13 +87,6 @@
         var baseLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         }).addTo(map);
-
-        flatpickr("#datepicker", {
-            mode: "range",
-            onChange: function(selectedDates, dateStr, instance) {
-                fetchData(dateStr);
-            }
-        });
 
         function fetchData(selectedDate) {
             weatherLayerGroup.clearLayers();
@@ -149,7 +141,6 @@
         });
         
         window.addEventListener('load', function() {
-            parseUrl();
             document.getElementById("preloader").style.display = "none";
         });
 
@@ -168,7 +159,10 @@
     <script src="Scripts/load-fires-and-weather.js"></script>
     <script src="Scripts/load-geojson.js"></script>
     <script src="Scripts/load-tif.js"></script>
+    <script src="Scripts/parse-url.js"></script>
     <script>
+        parseUrl();
+    
         document.getElementById("shareButton").addEventListener("click", function() {
             var selectedDate = document.getElementById("datepicker").value;
             var url = window.location.href.split('?')[0] + `?date=${selectedDate}`;

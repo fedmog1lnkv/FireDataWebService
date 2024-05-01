@@ -20,24 +20,25 @@ function parseUrl() {
         flatpickr("#datepicker", {
             mode: "range",
             onChange: function (selectedDates, dateStr, instance) {
-                fetchData(formattedDateParam);
+                fetchData(dateStr);
             }
         });
     }
-
-    const layersParam = urlParams.get('layers');
-    if (layersParam) {
-        const layers = layersParam.split(',');
-
-        layers.forEach(layer => {
-            const capitalizedLayer = capitalizeFirstLetter(layer);
-            if (overlayMaps[capitalizedLayer]) {
-                overlayMaps[capitalizedLayer].addTo(map);
-            }
-        });
-    }
-
     setTimeout(() => {
+        const layersParam = urlParams.get('layers');
+        if (layersParam) {
+            const layers = layersParam.split(',');
+            layers.forEach(layer => {
+                const capitalizedLayer = capitalizeFirstLetter(layer);
+                if (overlayMaps[capitalizedLayer]) {
+                    overlayMaps[capitalizedLayer].addTo(map);
+                }
+            });
+        }
+    }, 1500);
+    setTimeout(() => {
+        
+        
         const baseLayersParam = urlParams.get('base');
 
         if (baseLayersParam) {
