@@ -91,8 +91,6 @@ function fetchWeatherData(startDate, endDate) {
                 });
             }
 
-            console.log(weatherTypesCount)
-
             renderPieChart(weatherTypesData);
 
         })

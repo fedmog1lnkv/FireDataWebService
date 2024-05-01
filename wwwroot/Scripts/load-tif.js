@@ -1,3 +1,4 @@
+var registeredGeoRasterLayers = {};
 function fetchAndAddGeorasterLayer(layerName, filepath) {
     fetch(filepath)
         .then(response => response.arrayBuffer())
@@ -8,6 +9,7 @@ function fetchAndAddGeorasterLayer(layerName, filepath) {
                     opacity: 0.7,
                     resolution: 256
                 });
+                registeredGeoRasterLayers[layerName] = layer;
                 layerControl.addBaseLayer(layer, layerName);
             });
         })

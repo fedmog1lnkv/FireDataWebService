@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
     <link rel="stylesheet" href="Style/main.css" />
 </head>
 
@@ -27,8 +28,9 @@
                 <div id="map"></div>
             </div>
             <div class="col-md-3">
-                <div class="date-picker-container mb-3">
-                    <input type="text" id="datepicker" placeholder="Выберите дату" class="form-control">
+                <div class="date-picker-container mb-3 d-flex">
+                    <input type="text" id="datepicker" placeholder="Выберите дату" class="form-control flex-grow-1">
+                    <button id="shareButton" class="btn btn-primary ml-2" style="height: 38px; line-height: 18px;"><i class="material-icons" style="font-size: 24px;">share</i></button>
                 </div>
                 <div class="table-container">
                     <h5>Информация</h5>
@@ -65,6 +67,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/georaster@1.6.0/dist/georaster.browser.bundle.min.js"></script>
     <script src="https://unpkg.com/georaster-layer-for-leaflet/dist/georaster-layer-for-leaflet.min.js"></script>
+    <script src="Scripts/parse-url.js"></script>
     <script>
         var map = L.map('map').setView([57.22, 106], 5);
 
@@ -96,8 +99,6 @@
         function fetchData(selectedDate) {
             weatherLayerGroup.clearLayers();
             fireLayerGroup.clearLayers();
-
-            console.log(selectedDate);
 
             var dates = selectedDate.split(' to ');
             if (dates.length === 2) {
@@ -148,6 +149,7 @@
         });
         
         window.addEventListener('load', function() {
+            parseUrl();
             document.getElementById("preloader").style.display = "none";
         });
 
@@ -158,9 +160,35 @@
             }];
             renderPieChart(emptyData);
         }
+        
+        function capitalizeFirstLetter(string) {
+            return string.charAt(0).toUpperCase() + string.slice(1);
+        }
     </script>
     <script src="Scripts/load-fires-and-weather.js"></script>
     <script src="Scripts/load-geojson.js"></script>
     <script src="Scripts/load-tif.js"></script>
+    <script>
+        document.getElementById("shareButton").addEventListener("click", function() {
+            var selectedDate = document.getElementById("datepicker").value;
+            var url = window.location.href.split('?')[0] + `?date=${selectedDate}`;
+            var activeLayers = Object.keys(overlayMaps).filter(layer => map.hasLayer(overlayMaps[layer]));
+        
+            if (activeLayers.length > 0) {
+                url += `&layers=${activeLayers.join(',')}`;
+            }
+            
+            var activeBaseLayer = Object.keys(registeredGeoRasterLayers).find(layer => map.hasLayer(registeredGeoRasterLayers[layer]));
+            if (activeBaseLayer) {
+                url += `&base=${activeBaseLayer}`;
+            }
+        
+            navigator.clipboard.writeText(url).then(function() {
+                alert("Ссылка скопирована в буфер обмена!");
+            }, function(err) {
+                console.error('Ошибка копирования текста в буфер обмена: ', err);
+            });
+        });
+    </script>
 </body>
 </html>
